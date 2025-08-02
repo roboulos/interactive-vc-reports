@@ -20,9 +20,9 @@ export default function HomePage() {
     handleDragStart
   } = useMobileChat(defaultChatHeight)
 
-  const chatTitle = 'AI Recipe Assistant'
-  const chatDescription = 'Ask me to craft recipes'
-  const initialLabel = 'Hi 👋 How can I help with your recipe?'
+  const chatTitle = 'VC Data Assistant'
+  const chatDescription = 'Ask me to analyze VC data'
+  const initialLabel = 'Hi 👋 What VC insights would you like to explore?'
 
   return (
     <CopilotKit
@@ -40,7 +40,7 @@ export default function HomePage() {
           } as React.CSSProperties
         }
       >
-        <Recipe />
+        <VCVisualization />
         {isMobile ? (
           <>
             {/* Chat Toggle Button */}
@@ -138,184 +138,189 @@ export default function HomePage() {
   );
 }
 
-enum SkillLevel {
-  BEGINNER = "Beginner",
-  INTERMEDIATE = "Intermediate",
-  ADVANCED = "Advanced",
+enum VisualizationType {
+  LINE_CHART = "Line Chart",
+  BAR_CHART = "Bar Chart",
+  PIE_CHART = "Pie Chart",
+  KPI_CARD = "KPI Card",
+  TABLE = "Data Table",
 }
 
-enum CookingTime {
-  FiveMin = "5 min",
-  FifteenMin = "15 min",
-  ThirtyMin = "30 min",
-  FortyFiveMin = "45 min",
-  SixtyPlusMin = "60+ min",
+enum TimeRange {
+  LastMonth = "Last Month",
+  LastQuarter = "Last Quarter",
+  LastYear = "Last Year",
+  YTD = "Year to Date",
+  AllTime = "All Time",
 }
 
-const cookingTimeValues = [
-  { label: CookingTime.FiveMin, value: 0 },
-  { label: CookingTime.FifteenMin, value: 1 },
-  { label: CookingTime.ThirtyMin, value: 2 },
-  { label: CookingTime.FortyFiveMin, value: 3 },
-  { label: CookingTime.SixtyPlusMin, value: 4 },
+const timeRangeValues = [
+  { label: TimeRange.LastMonth, value: 0 },
+  { label: TimeRange.LastQuarter, value: 1 },
+  { label: TimeRange.LastYear, value: 2 },
+  { label: TimeRange.YTD, value: 3 },
+  { label: TimeRange.AllTime, value: 4 },
 ];
 
-const dietaryOptions = [
-  "Vegetarian",
-  "Nut-free",
-  "Dairy-free",
-  "Gluten-free",
-  "Vegan",
-  "Low-carb"
+const industryOptions = [
+  "SaaS",
+  "Fintech",
+  "Healthcare",
+  "E-commerce",
+  "AI/ML",
+  "Consumer",
+  "Enterprise",
+  "Biotech"
 ];
 
-interface Ingredient {
-  icon: string;
-  name: string;
-  amount: string;
+interface DataPoint {
+  label: string;
+  value: number;
+  category?: string;
 }
 
-interface Recipe {
+interface Visualization {
   title: string;
-  skill_level: SkillLevel;
-  cooking_time: CookingTime;
-  dietary_preferences: string[];
-  ingredients: Ingredient[];
-  instructions: string[];
+  type: VisualizationType;
+  time_range: TimeRange;
+  industry_filters: string[];
+  data_points: DataPoint[];
+  insights: string[];
 }
 
-interface RecipeAgentState {
-  recipe: Recipe;
+interface VisualizationAgentState {
+  visualization: Visualization;
 }
 
-const INITIAL_STATE: RecipeAgentState = {
-  recipe: {
-    title: "Make Your Recipe",
-    skill_level: SkillLevel.INTERMEDIATE,
-    cooking_time: CookingTime.FortyFiveMin,
-    dietary_preferences: [],
-    ingredients: [
-      { icon: "🥕", name: "Carrots", amount: "3 large, grated" },
-      { icon: "🌾", name: "All-Purpose Flour", amount: "2 cups" },
+const INITIAL_STATE: VisualizationAgentState = {
+  visualization: {
+    title: "VC Investment Analysis",
+    type: VisualizationType.BAR_CHART,
+    time_range: TimeRange.LastYear,
+    industry_filters: [],
+    data_points: [
+      { label: "SaaS", value: 250, category: "Investment Count" },
+      { label: "Fintech", value: 180, category: "Investment Count" },
     ],
-    instructions: ["Preheat oven to 350°F (175°C)"],
+    insights: ["SaaS continues to dominate investment activity"],
   },
 };
 
-function Recipe() {
-  const { state: agentState, setState: setAgentState } = useCoAgent<RecipeAgentState>({
-    name: "recipe_assistant",
+function VCVisualization() {
+  const { state: agentState, setState: setAgentState } = useCoAgent<VisualizationAgentState>({
+    name: "vc_assistant",
     initialState: INITIAL_STATE,
   });
 
   useCopilotAction({
-    name: "generate_recipe",
-    description: `Generate a recipe based on the user's input based on the ingredients and instructions, proceed with the recipe to finish it. The existing ingredients and instructions are provided to you as context: ${JSON.stringify(agentState)}. If you have just created or modified the recipe, just answer in one sentence what you did. dont describe the recipe, just say what you did`,
+    name: "generateVisualization",
+    description: `Generate a data visualization for venture capital analysis based on the user's request. The existing visualization context is provided: ${JSON.stringify(agentState)}. Create visualizations that help VCs understand investment trends, portfolio performance, or market insights. If you have just created or modified the visualization, briefly describe what you created.`,
     parameters: [
       {
-        name: "recipe",
+        name: "visualization",
         type: "object",
         attributes: [
           {
             name: "title",
             type: "string",
-            description: "The title of the recipe"
+            description: "The title of the visualization"
           },
           {
-            name: "skill_level",
+            name: "type",
             type: "string",
-            description: "The skill level of the recipe",
-            enum: Object.values(SkillLevel)
+            description: "The type of visualization",
+            enum: Object.values(VisualizationType)
           },
           {
-            name: "cooking_time",
+            name: "time_range",
             type: "string",
-            description: "The cooking time of the recipe",
-            enum: Object.values(CookingTime)
+            description: "The time range for the data analysis",
+            enum: Object.values(TimeRange)
           },
           {
-            name: "dietary_preferences",
+            name: "industry_filters",
             type: "string[]",
-            enum: dietaryOptions
+            enum: industryOptions,
+            description: "Industries to filter the data by"
           },
           {
-            name: "ingredients",
+            name: "data_points",
             type: "object[]",
             attributes: [
               {
-                name: "icon",
+                name: "label",
                 type: "string",
-                description: "The icon of the ingredient"
+                description: "The label for this data point"
               },
               {
-                name: "name",
-                type: "string",
-                description: "The name of the ingredient"
+                name: "value",
+                type: "number",
+                description: "The numeric value for this data point"
               },
               {
-                name: "amount",
+                name: "category",
                 type: "string",
-                description: "The amount of the ingredient"
+                description: "Optional category for grouping data points"
               }
             ]
           },
           {
-            name: "instructions",
+            name: "insights",
             type: "string[]",
-            description: "The instructions of the recipe"
+            description: "Key insights or takeaways from the data"
           }
         ]
       }
     ],
     render: ({args}) => {
       useEffect(() => {
-        console.log(args, "args.recipe")
-        updateRecipe(args?.recipe || {})
-      }, [args.recipe])
+        console.log(args, "args.visualization")
+        updateVisualization(args?.visualization || {})
+      }, [args.visualization])
       return <></>
     }
   })
 
-  const [recipe, setRecipe] = useState(INITIAL_STATE.recipe);
+  const [visualization, setVisualization] = useState(INITIAL_STATE.visualization);
   const { appendMessage, isLoading } = useCopilotChat();
-  const [editingInstructionIndex, setEditingInstructionIndex] = useState<number | null>(null);
-  const newInstructionRef = useRef<HTMLTextAreaElement>(null);
+  const [editingInsightIndex, setEditingInsightIndex] = useState<number | null>(null);
+  const newInsightRef = useRef<HTMLTextAreaElement>(null);
 
-  const updateRecipe = (partialRecipe: Partial<Recipe>) => {
+  const updateVisualization = (partialVisualization: Partial<Visualization>) => {
     setAgentState({
       ...agentState,
-      recipe: {
-        ...recipe,
-        ...partialRecipe,
+      visualization: {
+        ...visualization,
+        ...partialVisualization,
       },
     });
-    setRecipe({
-      ...recipe,
-      ...partialRecipe,
+    setVisualization({
+      ...visualization,
+      ...partialVisualization,
     });
   };
 
-  const newRecipeState = { ...recipe };
+  const newVisualizationState = { ...visualization };
   const newChangedKeys = [];
   const changedKeysRef = useRef<string[]>([]);
 
-  for (const key in recipe) {
+  for (const key in visualization) {
     if (
       agentState &&
-      agentState.recipe &&
-      (agentState.recipe as any)[key] !== undefined &&
-      (agentState.recipe as any)[key] !== null
+      agentState.visualization &&
+      (agentState.visualization as any)[key] !== undefined &&
+      (agentState.visualization as any)[key] !== null
     ) {
-      let agentValue = (agentState.recipe as any)[key];
-      const recipeValue = (recipe as any)[key];
+      let agentValue = (agentState.visualization as any)[key];
+      const visualizationValue = (visualization as any)[key];
 
       // Check if agentValue is a string and replace \n with actual newlines
       if (typeof agentValue === "string") {
         agentValue = agentValue.replace(/\\n/g, "\n");
       }
 
-      if (JSON.stringify(agentValue) !== JSON.stringify(recipeValue)) {
-        (newRecipeState as any)[key] = agentValue;
+      if (JSON.stringify(agentValue) !== JSON.stringify(visualizationValue)) {
+        (newVisualizationState as any)[key] = agentValue;
         newChangedKeys.push(key);
       }
     }
@@ -328,11 +333,11 @@ function Recipe() {
   }
 
   useEffect(() => {
-    setRecipe(newRecipeState);
-  }, [JSON.stringify(newRecipeState)]);
+    setVisualization(newVisualizationState);
+  }, [JSON.stringify(newVisualizationState)]);
 
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    updateRecipe({
+    updateVisualization({
       title: event.target.value,
     });
   };

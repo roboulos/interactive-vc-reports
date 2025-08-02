@@ -1,7 +1,14 @@
 {
-  "name": "my-ag-ui-app",
-  "version": "0.1.0",
+  "name": "interactive-vc-reports",
+  "version": "1.0.0",
+  "description": "Interactive VC Report System - AI-powered dynamic visualizations for venture capitalists to interrogate data through natural conversation",
+  "author": "Robert Boulos <robert@saasfounder.ai>",
   "private": true,
+  "keywords": ["venture-capital", "data-visualization", "ai", "copilotkit", "next.js", "interactive-reports"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/roboulos/interactive-vc-reports.git"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
