@@ -12,7 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, BarChart3, Plus, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CalendarDays, BarChart3, Plus, Trash2, MoreHorizontal, ArrowUpDown, Filter } from "lucide-react";
 
 export default function HomePage() {
   const { isMobile } = useMobileView();
@@ -445,172 +449,195 @@ function VCVisualization() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <input
-              type="text"
+    <div className="container mx-auto py-10">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            <Input
               value={visualization.title || ""}
               onChange={handleTitleChange}
-              className="bg-transparent border-none outline-none text-2xl font-semibold text-gray-900"
+              className="text-3xl font-bold border-none bg-transparent p-0 h-auto shadow-none focus-visible:ring-0"
+              placeholder="VC Investment Analysis"
             />
-          </CardTitle>
-          <CardDescription>
+          </h1>
+          <p className="text-muted-foreground">
             Analyze venture capital investment data with AI-powered insights
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-gray-500" />
-              <Select
-                value={timeRangeValues.find((t) => t.label === visualization.time_range)?.value.toString() || "2"}
-                onValueChange={(value) => {
-                  const selectedTimeRange = timeRangeValues[Number(value)];
-                  updateVisualization({ time_range: selectedTimeRange.label });
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Select
+            value={timeRangeValues.find((t) => t.label === visualization.time_range)?.value.toString() || "2"}
+            onValueChange={(value) => {
+              const selectedTimeRange = timeRangeValues[Number(value)];
+              updateVisualization({ time_range: selectedTimeRange.label });
+            }}
+          >
+            <SelectTrigger className="w-40">
+              <CalendarDays className="mr-2 h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {timeRangeValues.map((time) => (
+                <SelectItem key={time.value} value={time.value.toString()}>
+                  {time.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={visualization.type}
+            onValueChange={(value) => updateVisualization({ type: value as VisualizationType })}
+          >
+            <SelectTrigger className="w-40">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(VisualizationType).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center py-4 space-x-4">
+        <div className="flex items-center space-x-2">
+          <Filter className="h-4 w-4" />
+          <span className="text-sm font-medium">Industry Filters:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {industryOptions.map((option) => (
+            <div key={option} className="flex items-center space-x-2">
+              <Checkbox
+                id={option}
+                checked={visualization.industry_filters.includes(option)}
+                onCheckedChange={(checked) => {
+                  handleIndustryFilterChange(option, checked as boolean);
                 }}
+              />
+              <label
+                htmlFor={option}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeRangeValues.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {option}
+              </label>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-gray-500" />
-              <Select
-                value={visualization.type}
-                onValueChange={(value) => updateVisualization({ type: value as VisualizationType })}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(VisualizationType).map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Industry Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Industry Filters</CardTitle>
-          <CardDescription>
-            Select industries to focus your analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {industryOptions.map((option) => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option}
-                  checked={visualization.industry_filters.includes(option)}
-                  onCheckedChange={(checked) => {
-                    handleIndustryFilterChange(option, checked as boolean);
-                  }}
-                />
-                <label
-                  htmlFor={option}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {option}
-                </label>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Data Points */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Data Points</CardTitle>
-              <CardDescription>
-                Manage your investment data points
-              </CardDescription>
-            </div>
-            <Button onClick={addDataPoint} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Data Point
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {visualization.data_points.map((dataPoint, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Company/Industry</label>
-                  <input
-                    type="text"
-                    value={dataPoint.label || ""}
-                    onChange={(e) => updateDataPoint(index, "label", e.target.value)}
-                    placeholder="e.g., OpenAI"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Funding ($M)</label>
-                  <input
-                    type="number"
-                    value={dataPoint.value || 0}
-                    onChange={(e) => updateDataPoint(index, "value", e.target.value)}
-                    placeholder="1000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="space-y-2 flex items-end">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700">Category</label>
-                    <input
-                      type="text"
-                      value={dataPoint.category || ""}
-                      onChange={(e) => updateDataPoint(index, "category", e.target.value)}
-                      placeholder="e.g., AI/ML"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeDataPoint(index)}
-                    className="ml-2 text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
+      {/* Data Table */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight">Investment Data</h2>
+          <Button onClick={addDataPoint} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Investment
+          </Button>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">
+                  <Button variant="ghost" className="h-auto p-0 font-medium">
+                    Company/Industry
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                </TableHead>
+                <TableHead className="text-right">
+                  <Button variant="ghost" className="h-auto p-0 font-medium">
+                    Funding ($M)
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visualization.data_points.length ? (
+                visualization.data_points.map((dataPoint, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Input
+                        value={dataPoint.label || ""}
+                        onChange={(e) => updateDataPoint(index, "label", e.target.value)}
+                        placeholder="e.g., OpenAI"
+                        className="border-none bg-transparent p-0 h-auto shadow-none focus-visible:ring-0"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={dataPoint.value || 0}
+                        onChange={(e) => updateDataPoint(index, "value", e.target.value)}
+                        placeholder="1000"
+                        className="border-none bg-transparent p-0 h-auto shadow-none focus-visible:ring-0 text-right"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {dataPoint.category ? (
+                        <Badge variant="secondary">{dataPoint.category}</Badge>
+                      ) : (
+                        <Input
+                          value={dataPoint.category || ""}
+                          onChange={(e) => updateDataPoint(index, "category", e.target.value)}
+                          placeholder="e.g., AI/ML"
+                          className="border-none bg-transparent p-0 h-auto shadow-none focus-visible:ring-0"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => navigator.clipboard.writeText(dataPoint.label)}
+                          >
+                            Copy company name
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => removeDataPoint(index)}
+                            className="text-red-600"
+                          >
+                            Delete entry
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No investment data added yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
       {/* Chart Visualization */}
       <Card>
         <CardHeader>
-          <CardTitle>Visualization</CardTitle>
+          <CardTitle>Investment Analysis</CardTitle>
           <CardDescription>
-            Interactive chart showing your investment data
+            Interactive visualization of your venture capital data
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -630,63 +657,89 @@ function VCVisualization() {
             <div>
               <CardTitle>Key Insights</CardTitle>
               <CardDescription>
-                Important findings from your analysis
+                AI-powered analysis and market intelligence
               </CardDescription>
             </div>
             <Button onClick={addInsight} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Insight
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {visualization.insights.map((insight, index) => (
-              <div key={index} className="flex gap-4 p-4 border rounded-lg">
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                  {index + 1}
+            {visualization.insights.length > 0 ? (
+              visualization.insights.map((insight, index) => (
+                <div key={index} className="flex items-start space-x-4 p-4 rounded-lg border bg-card">
+                  <Badge variant="outline" className="mt-0.5">
+                    {index + 1}
+                  </Badge>
+                  <div className="flex-1 space-y-2">
+                    <textarea
+                      value={insight || ""}
+                      onChange={(e) => updateInsight(index, e.target.value)}
+                      placeholder="Enter key insight about the investment data..."
+                      className="w-full min-h-[60px] resize-none border-none bg-transparent p-0 text-sm focus:outline-none"
+                    />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => navigator.clipboard.writeText(insight)}
+                      >
+                        Copy insight
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => removeInsight(index)}
+                        className="text-red-600"
+                      >
+                        Delete insight
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="flex-1 relative">
-                  <textarea
-                    value={insight || ""}
-                    onChange={(e) => updateInsight(index, e.target.value)}
-                    placeholder="Enter key insight..."
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={2}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeInsight(index)}
-                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No insights added yet. Click "Add Insight" to get started.
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Generate Button */}
-      <div className="flex justify-center">
-        <Button
-          size="lg"
-          disabled={isLoading}
-          onClick={() => {
-            if (!isLoading) {
-              appendMessage(
-                new TextMessage({
-                  content: "Generate visualization",
-                  role: Role.User,
-                }),
-              );
-            }
-          }}
-        >
-          {isLoading ? "Please Wait..." : "Generate Visualization"}
-        </Button>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-6 border-t">
+        <div className="text-sm text-muted-foreground">
+          {visualization.data_points.length} investment{visualization.data_points.length !== 1 ? 's' : ''} • {visualization.insights.length} insight{visualization.insights.length !== 1 ? 's' : ''}
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            Export Data
+          </Button>
+          <Button
+            size="sm"
+            disabled={isLoading}
+            onClick={() => {
+              if (!isLoading) {
+                appendMessage(
+                  new TextMessage({
+                    content: "Generate new insights and improve this analysis",
+                    role: Role.User,
+                  }),
+                );
+              }
+            }}
+          >
+            {isLoading ? "Analyzing..." : "✨ Enhance with AI"}
+          </Button>
+        </div>
       </div>
     </div>
   );
