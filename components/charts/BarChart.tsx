@@ -1,4 +1,5 @@
 import React from 'react';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DataPoint {
   label: string;
@@ -14,43 +15,71 @@ interface BarChartProps {
 export const BarChart: React.FC<BarChartProps> = ({ data_points, height = 300 }) => {
   if (!data_points || data_points.length === 0) {
     return (
-      <div className="bar-chart-empty" style={{ height }}>
-        <p>No data available</p>
+      <div className="flex items-center justify-center" style={{ height }}>
+        <p className="text-gray-500">No data available</p>
       </div>
     );
   }
 
-  const maxValue = Math.max(...data_points.map(d => d.value || 0));
-  
+  // Transform data for Recharts
+  const chartData = data_points.map(point => ({
+    name: point.label,
+    value: point.value,
+    category: point.category || 'General'
+  }));
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-semibold text-gray-900">{label}</p>
+          <p className="text-blue-600">
+            <span className="font-medium">Funding: </span>
+            ${payload[0].value}M
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="bar-chart" style={{ height }}>
-      <div className="bar-chart-container">
-        {data_points.map((point, index) => {
-          const barHeight = maxValue > 0 ? (point.value / maxValue) * 100 : 0;
-          
-          return (
-            <div key={index} className="bar-item">
-              <div className="bar-wrapper">
-                <div 
-                  className="bar"
-                  style={{
-                    height: `${barHeight}%`,
-                    background: `linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)`,
-                    transition: 'height 0.5s ease-out',
-                    animationDelay: `${index * 0.1}s`
-                  }}
-                >
-                  <span className="bar-value">${point.value}M</span>
-                </div>
-              </div>
-              <span className="bar-label">{point.label}</span>
-              {point.category && (
-                <span className="bar-category">{point.category}</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div style={{ height, width: '100%' }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsBarChart
+          data={chartData}
+          margin={{
+            top: 20,
+            right: 30,
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fontSize: 12, fill: '#6b7280' }}
+            axisLine={{ stroke: '#e5e7eb' }}
+          />
+          <YAxis 
+            tick={{ fontSize: 12, fill: '#6b7280' }}
+            axisLine={{ stroke: '#e5e7eb' }}
+            tickFormatter={(value) => `$${value}M`}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar 
+            dataKey="value" 
+            fill="url(#blueGradient)"
+            radius={[4, 4, 0, 0]}
+          />
+          <defs>
+            <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#1e40af" />
+            </linearGradient>
+          </defs>
+        </RechartsBarChart>
+      </ResponsiveContainer>
     </div>
   );
 };

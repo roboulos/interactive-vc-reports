@@ -5,12 +5,14 @@ import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Role, TextMessage } from "@copilotkit/runtime-client-gql";
 import "@copilotkit/react-ui/styles.css";
-import "./vc-dashboard.css";
-import "./charts.css";
-import "./templates.css";
 import { useMobileView } from "@/utils/use-mobile-view";
 import { useMobileChat } from "@/utils/use-mobile-chat";
 import { ChartRenderer } from "@/components/charts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarDays, BarChart3, Plus, Trash2 } from "lucide-react";
 
 export default function HomePage() {
   const { isMobile } = useMobileView();
@@ -33,14 +35,7 @@ export default function HomePage() {
       runtimeUrl="/api/copilotkit"
       showDevConsole={false}
     >
-      <div
-        className="min-h-screen w-full flex items-center justify-center"
-        style={
-          {
-            background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-            backgroundAttachment: "fixed",
-          } as React.CSSProperties
-        }
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100"
       >
         <VCVisualization />
         {isMobile ? (
@@ -450,216 +445,235 @@ function VCVisualization() {
   };
 
   return (
-    <form className="vc-dashboard">
-      {/* Visualization Title */}
-      <div className="vc-header">
-        <input
-          type="text"
-          value={visualization.title || ""}
-          onChange={handleTitleChange}
-          className="vc-title-input"
-        />
+    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-blue-600" />
+            <input
+              type="text"
+              value={visualization.title || ""}
+              onChange={handleTitleChange}
+              className="bg-transparent border-none outline-none text-2xl font-semibold text-gray-900"
+            />
+          </CardTitle>
+          <CardDescription>
+            Analyze venture capital investment data with AI-powered insights
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-gray-500" />
+              <Select
+                value={timeRangeValues.find((t) => t.label === visualization.time_range)?.value.toString() || "2"}
+                onValueChange={(value) => {
+                  const selectedTimeRange = timeRangeValues[Number(value)];
+                  updateVisualization({ time_range: selectedTimeRange.label });
+                }}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeRangeValues.map((time) => (
+                    <SelectItem key={time.value} value={time.value.toString()}>
+                      {time.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="vc-meta">
-          <div className="meta-item">
-            <span className="meta-icon">📅</span>
-            <select
-              className="meta-select"
-              value={timeRangeValues.find((t) => t.label === visualization.time_range)?.value || 2}
-              onChange={handleTimeRangeChange}
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0px center",
-                backgroundSize: "12px",
-                appearance: "none",
-                WebkitAppearance: "none",
-              }}
-            >
-              {timeRangeValues.map((time) => (
-                <option key={time.value} value={time.value}>
-                  {time.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-gray-500" />
+              <Select
+                value={visualization.type}
+                onValueChange={(value) => updateVisualization({ type: value as VisualizationType })}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(VisualizationType).map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div className="meta-item">
-            <span className="meta-icon">📊</span>
-            <select
-              className="meta-select"
-              value={visualization.type}
-              onChange={handleTypeChange}
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0px center",
-                backgroundSize: "12px",
-                appearance: "none",
-                WebkitAppearance: "none",
-              }}
-            >
-              {Object.values(VisualizationType).map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Industry Filters */}
-      <div className="section-container relative">
-        {changedKeysRef.current.includes("industry_filters") && <Ping />}
-        <h2 className="section-title">Industry Filters</h2>
-        <div className="industry-filters">
-          {industryOptions.map((option) => (
-            <label key={option} className="industry-option">
-              <input
-                type="checkbox"
-                checked={visualization.industry_filters.includes(option)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleIndustryFilterChange(option, e.target.checked)
-                }
-              />
-              <span>{option}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Industry Filters</CardTitle>
+          <CardDescription>
+            Select industries to focus your analysis
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {industryOptions.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <Checkbox
+                  id={option}
+                  checked={visualization.industry_filters.includes(option)}
+                  onCheckedChange={(checked) => {
+                    handleIndustryFilterChange(option, checked as boolean);
+                  }}
+                />
+                <label
+                  htmlFor={option}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {option}
+                </label>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Data Points */}
-      <div className="section-container relative">
-        {changedKeysRef.current.includes("data_points") && <Ping />}
-        <div className="section-header">
-          <h2 className="section-title">Data Points</h2>
-          <button type="button" className="add-button" onClick={addDataPoint}>
-            + Add Data Point
-          </button>
-        </div>
-        <div className="data-points-container">
-          {visualization.data_points.map((dataPoint, index) => (
-            <div key={index} className="data-point-card">
-              <div className="data-point-content">
-                <input
-                  type="text"
-                  value={dataPoint.label || ""}
-                  onChange={(e) => updateDataPoint(index, "label", e.target.value)}
-                  placeholder="Data label"
-                  className="data-point-label-input"
-                />
-                <input
-                  type="number"
-                  value={dataPoint.value || 0}
-                  onChange={(e) => updateDataPoint(index, "value", e.target.value)}
-                  placeholder="Value"
-                  className="data-point-value-input"
-                />
-                <input
-                  type="text"
-                  value={dataPoint.category || ""}
-                  onChange={(e) => updateDataPoint(index, "category", e.target.value)}
-                  placeholder="Category"
-                  className="data-point-category-input"
-                />
-              </div>
-              <button
-                type="button"
-                className="remove-button"
-                onClick={() => removeDataPoint(index)}
-                aria-label="Remove ingredient"
-              >
-                ×
-              </button>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Data Points</CardTitle>
+              <CardDescription>
+                Manage your investment data points
+              </CardDescription>
             </div>
-          ))}
-        </div>
-      </div>
+            <Button onClick={addDataPoint} variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Data Point
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {visualization.data_points.map((dataPoint, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Company/Industry</label>
+                  <input
+                    type="text"
+                    value={dataPoint.label || ""}
+                    onChange={(e) => updateDataPoint(index, "label", e.target.value)}
+                    placeholder="e.g., OpenAI"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Funding ($M)</label>
+                  <input
+                    type="number"
+                    value={dataPoint.value || 0}
+                    onChange={(e) => updateDataPoint(index, "value", e.target.value)}
+                    placeholder="1000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2 flex items-end">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700">Category</label>
+                    <input
+                      type="text"
+                      value={dataPoint.category || ""}
+                      onChange={(e) => updateDataPoint(index, "category", e.target.value)}
+                      placeholder="e.g., AI/ML"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeDataPoint(index)}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Chart Visualization */}
-      <div className="section-container relative">
-        <div className="chart-container">
-          <h2 className="section-title">Visualization</h2>
-          <div className="chart-placeholder">
+      <Card>
+        <CardHeader>
+          <CardTitle>Visualization</CardTitle>
+          <CardDescription>
+            Interactive chart showing your investment data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-96 w-full">
             <ChartRenderer 
               type={visualization.type} 
               data_points={visualization.data_points} 
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Key Insights */}
-      <div className="section-container relative">
-        {changedKeysRef.current.includes("insights") && <Ping />}
-        <div className="section-header">
-          <h2 className="section-title">Key Insights</h2>
-          <button type="button" className="add-step-button" onClick={addInsight}>
-            + Add Insight
-          </button>
-        </div>
-        <div className="insights-container">
-          {visualization.insights.map((insight, index) => (
-            <div key={index} className="insight-item">
-              {/* Number Circle */}
-              <div className="insight-number">{index + 1}</div>
-
-              {/* Vertical Line */}
-              {index < visualization.insights.length - 1 && <div className="insight-line" />}
-
-              {/* Instruction Content */}
-              <div
-                className={`insight-content ${
-                  editingInsightIndex === index
-                    ? "insight-content-editing"
-                    : "insight-content-default"
-                }`}
-                onClick={() => setEditingInsightIndex(index)}
-              >
-                <textarea
-                  className="insight-textarea"
-                  value={insight || ""}
-                  onChange={(e) => updateInsight(index, e.target.value)}
-                  placeholder={!insight ? "Enter key insight..." : ""}
-                  onFocus={() => setEditingInsightIndex(index)}
-                  onBlur={(e) => {
-                    // Only blur if clicking outside this instruction
-                    if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) {
-                      setEditingInsightIndex(null);
-                    }
-                  }}
-                />
-
-                {/* Delete Button (only visible on hover) */}
-                <button
-                  type="button"
-                  className={`insight-delete-btn ${
-                    editingInsightIndex === index
-                      ? "insight-delete-btn-editing"
-                      : "insight-delete-btn-default"
-                  } remove-button`}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent triggering parent onClick
-                    removeInsight(index);
-                  }}
-                  aria-label="Remove instruction"
-                >
-                  ×
-                </button>
-              </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Key Insights</CardTitle>
+              <CardDescription>
+                Important findings from your analysis
+              </CardDescription>
             </div>
-          ))}
-        </div>
-      </div>
+            <Button onClick={addInsight} variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Insight
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {visualization.insights.map((insight, index) => (
+              <div key={index} className="flex gap-4 p-4 border rounded-lg">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                  {index + 1}
+                </div>
+                <div className="flex-1 relative">
+                  <textarea
+                    value={insight || ""}
+                    onChange={(e) => updateInsight(index, e.target.value)}
+                    placeholder="Enter key insight..."
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={2}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeInsight(index)}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Generate Visualization Button */}
-      <div className="action-container">
-        <button
-          className={isLoading ? "generate-button loading" : "generate-button"}
-          type="button"
+      {/* Generate Button */}
+      <div className="flex justify-center">
+        <Button
+          size="lg"
+          disabled={isLoading}
           onClick={() => {
             if (!isLoading) {
               appendMessage(
@@ -670,12 +684,11 @@ function VCVisualization() {
               );
             }
           }}
-          disabled={isLoading}
         >
           {isLoading ? "Please Wait..." : "Generate Visualization"}
-        </button>
+        </Button>
       </div>
-    </form>
+    </div>
   );
 }
 
