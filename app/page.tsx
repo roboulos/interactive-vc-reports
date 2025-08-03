@@ -2,11 +2,15 @@
 import { CopilotKit, useCoAgent, useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
 import { CopilotChat, CopilotSidebar } from "@copilotkit/react-ui";
 import React, { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Role, TextMessage } from "@copilotkit/runtime-client-gql";
 import "@copilotkit/react-ui/styles.css";
-import "./recipe.css";
+import "./vc-dashboard.css";
+import "./charts.css";
+import "./templates.css";
 import { useMobileView } from "@/utils/use-mobile-view";
 import { useMobileChat } from "@/utils/use-mobile-chat";
+import { ChartRenderer } from "@/components/charts";
 
 export default function HomePage() {
   const { isMobile } = useMobileView();
@@ -33,10 +37,8 @@ export default function HomePage() {
         className="min-h-screen w-full flex items-center justify-center"
         style={
           {
-            backgroundImage: "url('/shared_state_background.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+            background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+            backgroundAttachment: "fixed",
           } as React.CSSProperties
         }
       >
@@ -139,8 +141,8 @@ export default function HomePage() {
 }
 
 enum VisualizationType {
-  LINE_CHART = "Line Chart",
   BAR_CHART = "Bar Chart",
+  LINE_CHART = "Line Chart",
   PIE_CHART = "Pie Chart",
   KPI_CARD = "KPI Card",
   TABLE = "Data Table",
@@ -179,7 +181,7 @@ interface DataPoint {
   category?: string;
 }
 
-interface Visualization {
+interface VCVisualization {
   title: string;
   type: VisualizationType;
   time_range: TimeRange;
@@ -188,105 +190,40 @@ interface Visualization {
   insights: string[];
 }
 
-interface VisualizationAgentState {
-  visualization: Visualization;
+interface VCVisualizationAgentState {
+  visualization: VCVisualization;
 }
 
-const INITIAL_STATE: VisualizationAgentState = {
+const INITIAL_STATE: VCVisualizationAgentState = {
   visualization: {
     title: "VC Investment Analysis",
     type: VisualizationType.BAR_CHART,
     time_range: TimeRange.LastYear,
     industry_filters: [],
     data_points: [
-      { label: "SaaS", value: 250, category: "Investment Count" },
-      { label: "Fintech", value: 180, category: "Investment Count" },
+      { label: "SaaS", value: 2847, category: "Funding ($M)" },
+      { label: "Fintech", value: 1234, category: "Funding ($M)" },
+      { label: "Healthcare", value: 987, category: "Funding ($M)" },
+      { label: "E-commerce", value: 765, category: "Funding ($M)" },
     ],
-    insights: ["SaaS continues to dominate investment activity"],
+    insights: ["SaaS continues to dominate VC funding with $2.8B invested", "Fintech shows strong growth with 45% YoY increase"],
   },
 };
 
 function VCVisualization() {
-  const { state: agentState, setState: setAgentState } = useCoAgent<VisualizationAgentState>({
+  const { state: agentState, setState: setAgentState } = useCoAgent<VCVisualizationAgentState>({
     name: "vc_assistant",
     initialState: INITIAL_STATE,
   });
 
-  useCopilotAction({
-    name: "generateVisualization",
-    description: `Generate a data visualization for venture capital analysis based on the user's request. The existing visualization context is provided: ${JSON.stringify(agentState)}. Create visualizations that help VCs understand investment trends, portfolio performance, or market insights. If you have just created or modified the visualization, briefly describe what you created.`,
-    parameters: [
-      {
-        name: "visualization",
-        type: "object",
-        attributes: [
-          {
-            name: "title",
-            type: "string",
-            description: "The title of the visualization"
-          },
-          {
-            name: "type",
-            type: "string",
-            description: "The type of visualization",
-            enum: Object.values(VisualizationType)
-          },
-          {
-            name: "time_range",
-            type: "string",
-            description: "The time range for the data analysis",
-            enum: Object.values(TimeRange)
-          },
-          {
-            name: "industry_filters",
-            type: "string[]",
-            enum: industryOptions,
-            description: "Industries to filter the data by"
-          },
-          {
-            name: "data_points",
-            type: "object[]",
-            attributes: [
-              {
-                name: "label",
-                type: "string",
-                description: "The label for this data point"
-              },
-              {
-                name: "value",
-                type: "number",
-                description: "The numeric value for this data point"
-              },
-              {
-                name: "category",
-                type: "string",
-                description: "Optional category for grouping data points"
-              }
-            ]
-          },
-          {
-            name: "insights",
-            type: "string[]",
-            description: "Key insights or takeaways from the data"
-          }
-        ]
-      }
-    ],
-    render: ({args}) => {
-      useEffect(() => {
-        console.log(args, "args.visualization")
-        updateVisualization(args?.visualization || {})
-      }, [args.visualization])
-      return <></>
-    }
-  })
+  // Temporarily removed - will be added after state setup
 
   const [visualization, setVisualization] = useState(INITIAL_STATE.visualization);
   const { appendMessage, isLoading } = useCopilotChat();
   const [editingInsightIndex, setEditingInsightIndex] = useState<number | null>(null);
   const newInsightRef = useRef<HTMLTextAreaElement>(null);
 
-  const updateVisualization = (partialVisualization: Partial<Visualization>) => {
+  const updateVisualization = (partialVisualization: Partial<VCVisualization>) => {
     setAgentState({
       ...agentState,
       visualization: {
@@ -336,69 +273,163 @@ function VCVisualization() {
     setVisualization(newVisualizationState);
   }, [JSON.stringify(newVisualizationState)]);
 
+  // CopilotKit Action for VC Visualizations
+  useCopilotAction({
+    name: "generateVisualization",
+    description: `Generate VC data visualization based on user's request. Context: ${JSON.stringify(agentState)}. If you created/modified visualization, describe what you did in one sentence.`,
+    parameters: [
+      {
+        name: "visualization",
+        type: "object",
+        attributes: [
+          {
+            name: "title",
+            type: "string",
+            description: "The title of the visualization"
+          },
+          {
+            name: "type",
+            type: "string",
+            description: "The type of visualization",
+            enum: Object.values(VisualizationType)
+          },
+          {
+            name: "time_range",
+            type: "string",
+            description: "The time range for analysis",
+            enum: Object.values(TimeRange)
+          },
+          {
+            name: "industry_filters",
+            type: "string[]",
+            enum: industryOptions
+          },
+          {
+            name: "data_points",
+            type: "object[]",
+            attributes: [
+              {
+                name: "label",
+                type: "string",
+                description: "The label for this data point"
+              },
+              {
+                name: "value",
+                type: "number",
+                description: "The numeric value"
+              },
+              {
+                name: "category",
+                type: "string",
+                description: "Optional category"
+              }
+            ]
+          },
+          {
+            name: "insights",
+            type: "string[]",
+            description: "Key insights from the data"
+          }
+        ]
+      }
+    ],
+    render: ({args}) => {
+      useEffect(() => {
+        console.log(args, "args.visualization")
+        updateVisualization(args?.visualization || {})
+      }, [args.visualization])
+      return <></>
+    }
+  })
+
+  // AG UI Action for rendering template-based components
+  useCopilotAction({
+    name: "renderVCComponent",
+    description: "Render VC data components using AG UI templates for rich visual responses",
+    parameters: [
+      {
+        name: "component",
+        type: "string",
+        description: "The component template to render",
+        enum: ["VisualizationTemplate", "KPITemplate", "TableTemplate", "FormTemplate", "DashboardTemplate"]
+      },
+      {
+        name: "data",
+        type: "object",
+        description: "The data to pass to the component template"
+      }
+    ],
+    render: ({args}) => {
+      if (!args?.component || !args?.data) return null;
+      
+      const ComponentResolver = dynamic(() => import('@/components/ComponentResolver'), { ssr: false });
+      
+      return <ComponentResolver componentData={{ component: args.component, data: args.data }} />;
+    }
+  })
+
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     updateVisualization({
       title: event.target.value,
     });
   };
 
-  const handleSkillLevelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    updateRecipe({
-      skill_level: event.target.value as SkillLevel,
+  const handleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    updateVisualization({
+      type: event.target.value as VisualizationType,
     });
   };
 
-  const handleDietaryChange = (preference: string, checked: boolean) => {
+  const handleIndustryFilterChange = (industry: string, checked: boolean) => {
     if (checked) {
-      updateRecipe({
-        dietary_preferences: [...recipe.dietary_preferences, preference],
+      updateVisualization({
+        industry_filters: [...visualization.industry_filters, industry],
       });
     } else {
-      updateRecipe({
-        dietary_preferences: recipe.dietary_preferences.filter((p) => p !== preference),
+      updateVisualization({
+        industry_filters: visualization.industry_filters.filter((i) => i !== industry),
       });
     }
   };
 
-  const handleCookingTimeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    updateRecipe({
-      cooking_time: cookingTimeValues[Number(event.target.value)].label,
+  const handleTimeRangeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    updateVisualization({
+      time_range: timeRangeValues[Number(event.target.value)].label,
     });
   };
 
-  const addIngredient = () => {
-    // Pick a random food emoji from our valid list
-    updateRecipe({
-      ingredients: [...recipe.ingredients, { icon: "🍴", name: "", amount: "" }],
+  const addDataPoint = () => {
+    updateVisualization({
+      data_points: [...visualization.data_points, { label: "", value: 0, category: "" }],
     });
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
-    const updatedIngredients = [...recipe.ingredients];
-    updatedIngredients[index] = {
-      ...updatedIngredients[index],
-      [field]: value,
+  const updateDataPoint = (index: number, field: keyof DataPoint, value: string | number) => {
+    const updatedDataPoints = [...visualization.data_points];
+    updatedDataPoints[index] = {
+      ...updatedDataPoints[index],
+      [field]: field === 'value' ? Number(value) : value,
     };
-    updateRecipe({ ingredients: updatedIngredients });
+    updateVisualization({ data_points: updatedDataPoints });
   };
 
-  const removeIngredient = (index: number) => {
-    const updatedIngredients = [...recipe.ingredients];
-    updatedIngredients.splice(index, 1);
-    updateRecipe({ ingredients: updatedIngredients });
+  const removeDataPoint = (index: number) => {
+    const updatedDataPoints = [...visualization.data_points];
+    updatedDataPoints.splice(index, 1);
+    updateVisualization({ data_points: updatedDataPoints });
   };
 
-  const addInstruction = () => {
-    const newIndex = recipe.instructions.length;
-    updateRecipe({
-      instructions: [...recipe.instructions, ""],
+  const addInsight = () => {
+    const newIndex = visualization.insights.length;
+    updateVisualization({
+      insights: [...visualization.insights, ""],
     });
-    // Set the new instruction as the editing one
-    setEditingInstructionIndex(newIndex);
+    // Set the new insight as the editing one
+    setEditingInsightIndex(newIndex);
 
-    // Focus the new instruction after render
+    // Focus the new insight after render
     setTimeout(() => {
-      const textareas = document.querySelectorAll(".instructions-container textarea");
+      const textareas = document.querySelectorAll(".insights-container textarea");
       const newTextarea = textareas[textareas.length - 1] as HTMLTextAreaElement;
       if (newTextarea) {
         newTextarea.focus();
@@ -406,46 +437,36 @@ function VCVisualization() {
     }, 50);
   };
 
-  const updateInstruction = (index: number, value: string) => {
-    const updatedInstructions = [...recipe.instructions];
-    updatedInstructions[index] = value;
-    updateRecipe({ instructions: updatedInstructions });
+  const updateInsight = (index: number, value: string) => {
+    const updatedInsights = [...visualization.insights];
+    updatedInsights[index] = value;
+    updateVisualization({ insights: updatedInsights });
   };
 
-  const removeInstruction = (index: number) => {
-    const updatedInstructions = [...recipe.instructions];
-    updatedInstructions.splice(index, 1);
-    updateRecipe({ instructions: updatedInstructions });
-  };
-
-  // Simplified icon handler that defaults to a fork/knife for any problematic icons
-  const getProperIcon = (icon: string | undefined): string => {
-    // If icon is undefined  return the default
-    if (!icon) {
-      return "🍴";
-    }
-
-    return icon;
+  const removeInsight = (index: number) => {
+    const updatedInsights = [...visualization.insights];
+    updatedInsights.splice(index, 1);
+    updateVisualization({ insights: updatedInsights });
   };
 
   return (
-    <form className="recipe-card">
-      {/* Recipe Title */}
-      <div className="recipe-header">
+    <form className="vc-dashboard">
+      {/* Visualization Title */}
+      <div className="vc-header">
         <input
           type="text"
-          value={recipe.title || ""}
+          value={visualization.title || ""}
           onChange={handleTitleChange}
-          className="recipe-title-input"
+          className="vc-title-input"
         />
 
-        <div className="recipe-meta">
+        <div className="vc-meta">
           <div className="meta-item">
-            <span className="meta-icon">🕒</span>
+            <span className="meta-icon">📅</span>
             <select
               className="meta-select"
-              value={cookingTimeValues.find((t) => t.label === recipe.cooking_time)?.value || 3}
-              onChange={handleCookingTimeChange}
+              value={timeRangeValues.find((t) => t.label === visualization.time_range)?.value || 2}
+              onChange={handleTimeRangeChange}
               style={{
                 backgroundImage:
                   "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
@@ -456,7 +477,7 @@ function VCVisualization() {
                 WebkitAppearance: "none",
               }}
             >
-              {cookingTimeValues.map((time) => (
+              {timeRangeValues.map((time) => (
                 <option key={time.value} value={time.value}>
                   {time.label}
                 </option>
@@ -465,11 +486,11 @@ function VCVisualization() {
           </div>
 
           <div className="meta-item">
-            <span className="meta-icon">🏆</span>
+            <span className="meta-icon">📊</span>
             <select
               className="meta-select"
-              value={recipe.skill_level}
-              onChange={handleSkillLevelChange}
+              value={visualization.type}
+              onChange={handleTypeChange}
               style={{
                 backgroundImage:
                   "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
@@ -480,9 +501,9 @@ function VCVisualization() {
                 WebkitAppearance: "none",
               }}
             >
-              {Object.values(SkillLevel).map((level) => (
-                <option key={level} value={level}>
-                  {level}
+              {Object.values(VisualizationType).map((type) => (
+                <option key={type} value={type}>
+                  {type}
                 </option>
               ))}
             </select>
@@ -490,18 +511,18 @@ function VCVisualization() {
         </div>
       </div>
 
-      {/* Dietary Preferences */}
+      {/* Industry Filters */}
       <div className="section-container relative">
-        {changedKeysRef.current.includes("dietary_preferences") && <Ping />}
-        <h2 className="section-title">Dietary Preferences</h2>
-        <div className="dietary-options">
-          {dietaryOptions.map((option) => (
-            <label key={option} className="dietary-option">
+        {changedKeysRef.current.includes("industry_filters") && <Ping />}
+        <h2 className="section-title">Industry Filters</h2>
+        <div className="industry-filters">
+          {industryOptions.map((option) => (
+            <label key={option} className="industry-option">
               <input
                 type="checkbox"
-                checked={recipe.dietary_preferences.includes(option)}
+                checked={visualization.industry_filters.includes(option)}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleDietaryChange(option, e.target.checked)
+                  handleIndustryFilterChange(option, e.target.checked)
                 }
               />
               <span>{option}</span>
@@ -510,39 +531,45 @@ function VCVisualization() {
         </div>
       </div>
 
-      {/* Ingredients */}
+      {/* Data Points */}
       <div className="section-container relative">
-        {changedKeysRef.current.includes("ingredients") && <Ping />}
+        {changedKeysRef.current.includes("data_points") && <Ping />}
         <div className="section-header">
-          <h2 className="section-title">Ingredients</h2>
-          <button type="button" className="add-button" onClick={addIngredient}>
-            + Add Ingredient
+          <h2 className="section-title">Data Points</h2>
+          <button type="button" className="add-button" onClick={addDataPoint}>
+            + Add Data Point
           </button>
         </div>
-        <div className="ingredients-container">
-          {recipe.ingredients.map((ingredient, index) => (
-            <div key={index} className="ingredient-card">
-              <div className="ingredient-icon">{getProperIcon(ingredient.icon)}</div>
-              <div className="ingredient-content">
+        <div className="data-points-container">
+          {visualization.data_points.map((dataPoint, index) => (
+            <div key={index} className="data-point-card">
+              <div className="data-point-content">
                 <input
                   type="text"
-                  value={ingredient.name || ""}
-                  onChange={(e) => updateIngredient(index, "name", e.target.value)}
-                  placeholder="Ingredient name"
-                  className="ingredient-name-input"
+                  value={dataPoint.label || ""}
+                  onChange={(e) => updateDataPoint(index, "label", e.target.value)}
+                  placeholder="Data label"
+                  className="data-point-label-input"
+                />
+                <input
+                  type="number"
+                  value={dataPoint.value || 0}
+                  onChange={(e) => updateDataPoint(index, "value", e.target.value)}
+                  placeholder="Value"
+                  className="data-point-value-input"
                 />
                 <input
                   type="text"
-                  value={ingredient.amount || ""}
-                  onChange={(e) => updateIngredient(index, "amount", e.target.value)}
-                  placeholder="Amount"
-                  className="ingredient-amount-input"
+                  value={dataPoint.category || ""}
+                  onChange={(e) => updateDataPoint(index, "category", e.target.value)}
+                  placeholder="Category"
+                  className="data-point-category-input"
                 />
               </div>
               <button
                 type="button"
                 className="remove-button"
-                onClick={() => removeIngredient(index)}
+                onClick={() => removeDataPoint(index)}
                 aria-label="Remove ingredient"
               >
                 ×
@@ -552,43 +579,56 @@ function VCVisualization() {
         </div>
       </div>
 
-      {/* Instructions */}
+      {/* Chart Visualization */}
       <div className="section-container relative">
-        {changedKeysRef.current.includes("instructions") && <Ping />}
+        <div className="chart-container">
+          <h2 className="section-title">Visualization</h2>
+          <div className="chart-placeholder">
+            <ChartRenderer 
+              type={visualization.type} 
+              data_points={visualization.data_points} 
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Key Insights */}
+      <div className="section-container relative">
+        {changedKeysRef.current.includes("insights") && <Ping />}
         <div className="section-header">
-          <h2 className="section-title">Instructions</h2>
-          <button type="button" className="add-step-button" onClick={addInstruction}>
-            + Add Step
+          <h2 className="section-title">Key Insights</h2>
+          <button type="button" className="add-step-button" onClick={addInsight}>
+            + Add Insight
           </button>
         </div>
-        <div className="instructions-container">
-          {recipe.instructions.map((instruction, index) => (
-            <div key={index} className="instruction-item">
+        <div className="insights-container">
+          {visualization.insights.map((insight, index) => (
+            <div key={index} className="insight-item">
               {/* Number Circle */}
-              <div className="instruction-number">{index + 1}</div>
+              <div className="insight-number">{index + 1}</div>
 
               {/* Vertical Line */}
-              {index < recipe.instructions.length - 1 && <div className="instruction-line" />}
+              {index < visualization.insights.length - 1 && <div className="insight-line" />}
 
               {/* Instruction Content */}
               <div
-                className={`instruction-content ${
-                  editingInstructionIndex === index
-                    ? "instruction-content-editing"
-                    : "instruction-content-default"
+                className={`insight-content ${
+                  editingInsightIndex === index
+                    ? "insight-content-editing"
+                    : "insight-content-default"
                 }`}
-                onClick={() => setEditingInstructionIndex(index)}
+                onClick={() => setEditingInsightIndex(index)}
               >
                 <textarea
-                  className="instruction-textarea"
-                  value={instruction || ""}
-                  onChange={(e) => updateInstruction(index, e.target.value)}
-                  placeholder={!instruction ? "Enter cooking instruction..." : ""}
-                  onFocus={() => setEditingInstructionIndex(index)}
+                  className="insight-textarea"
+                  value={insight || ""}
+                  onChange={(e) => updateInsight(index, e.target.value)}
+                  placeholder={!insight ? "Enter key insight..." : ""}
+                  onFocus={() => setEditingInsightIndex(index)}
                   onBlur={(e) => {
                     // Only blur if clicking outside this instruction
                     if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) {
-                      setEditingInstructionIndex(null);
+                      setEditingInsightIndex(null);
                     }
                   }}
                 />
@@ -596,14 +636,14 @@ function VCVisualization() {
                 {/* Delete Button (only visible on hover) */}
                 <button
                   type="button"
-                  className={`instruction-delete-btn ${
-                    editingInstructionIndex === index
-                      ? "instruction-delete-btn-editing"
-                      : "instruction-delete-btn-default"
+                  className={`insight-delete-btn ${
+                    editingInsightIndex === index
+                      ? "insight-delete-btn-editing"
+                      : "insight-delete-btn-default"
                   } remove-button`}
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent triggering parent onClick
-                    removeInstruction(index);
+                    removeInsight(index);
                   }}
                   aria-label="Remove instruction"
                 >
@@ -615,16 +655,16 @@ function VCVisualization() {
         </div>
       </div>
 
-      {/* Improve with AI Button */}
+      {/* Generate Visualization Button */}
       <div className="action-container">
         <button
-          className={isLoading ? "improve-button loading" : "improve-button"}
+          className={isLoading ? "generate-button loading" : "generate-button"}
           type="button"
           onClick={() => {
             if (!isLoading) {
               appendMessage(
                 new TextMessage({
-                  content: "Improve the recipe",
+                  content: "Generate visualization",
                   role: Role.User,
                 }),
               );
@@ -632,7 +672,7 @@ function VCVisualization() {
           }}
           disabled={isLoading}
         >
-          {isLoading ? "Please Wait..." : "Improve with AI"}
+          {isLoading ? "Please Wait..." : "Generate Visualization"}
         </button>
       </div>
     </form>

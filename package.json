@@ -4,7 +4,14 @@
   "description": "Interactive VC Report System - AI-powered dynamic visualizations for venture capitalists to interrogate data through natural conversation",
   "author": "Robert Boulos <robert@saasfounder.ai>",
   "private": true,
-  "keywords": ["venture-capital", "data-visualization", "ai", "copilotkit", "next.js", "interactive-reports"],
+  "keywords": [
+    "venture-capital",
+    "data-visualization",
+    "ai",
+    "copilotkit",
+    "next.js",
+    "interactive-reports"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/roboulos/interactive-vc-reports.git"
@@ -41,11 +48,14 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@babel/plugin-transform-flow-strip-types": "^7.27.1",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "babel-plugin-add-module-exports": "^1.0.4",
+    "babel-preset-airbnb": "^5.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "tailwindcss": "^4",
